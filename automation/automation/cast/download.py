@@ -1,12 +1,8 @@
-#-*-coding:utf-8-*-
+# -*- coding: utf-8 -*-
 import os
 import urllib 
 
-from selenium import webdriver
-from scrapy.selector import Selector 
-
-from automationsys import get_phantomjs_webdriver
-from automationsys import get_ouput_dir
+from automationsys import Configure
 from automation.performance.actor import Actor
 
 class FileSave(Actor):
@@ -20,7 +16,7 @@ class FileSave(Actor):
     
   def download_file(self):
     elements = self.getComponent()
-    file_path = get_ouput_dir()+"/download"
+    file_path = Configure.get_ouput_dir()+"/download"
     if not os.path.exists(file_path):
       os.mkdir(file_path)
     print (elements)
@@ -34,7 +30,7 @@ class FileSave(Actor):
       print ("Download file to path: " + file_path+"/"+file_name)
       urllib.urlretrieve(url, file_path+"/"+file_name)
 
-  def do(self):
+  def do(self, p_location=None):
     self.download_file()
 
   def duration(self):
@@ -51,5 +47,5 @@ class FileSave(Actor):
     if src_prop:
       self._url_property = src_prop
 
-  def getData():
+  def getData(self):
     pass

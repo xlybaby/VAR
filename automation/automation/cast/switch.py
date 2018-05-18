@@ -1,9 +1,6 @@
-#-*-coding:utf-8-*-
+# -*- coding: utf-8 -*-
 import os
-from selenium import webdriver
-
-from automationsys import get_phantomjs_webdriver
-from automationsys import get_ouput_dir
+from automationsys import Configure
 from automation.performance.actor import Actor
 from automation.cast.assistant import Locator
 
@@ -21,7 +18,7 @@ class Changer(Actor):
     self._frame_index = None
     self.setProperties(p_parameters)
 
-  def do(self):
+  def do(self, p_location=None):
     if self._type == "window":
       self.switch_window()
 
@@ -35,10 +32,10 @@ class Changer(Actor):
     return self._act_time
 
   def switch_parent_frame(self):
-    get_phantomjs_webdriver().switch_to.parent_frame()
+    Configure.get_chrome_webdriver().switch_to.parent_frame()
 
   def switch_frame(self):
-    driver = get_phantomjs_webdriver()
+    driver = Configure.get_chrome_webdriver()
     xpath=None
     if self._frame_index:
       xpath = "//iframe["+str(self._frame_index)+"]"
@@ -47,7 +44,7 @@ class Changer(Actor):
     print (driver.page_source)
 
   def switch_window(self):
-    driver = get_phantomjs_webdriver()
+    driver = Configure.get_chrome_webdriver()
     handles = driver.window_handles
 
     print ("switch window: "+self._window)

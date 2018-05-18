@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import sys
-import os
+import sys,os
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -10,26 +9,47 @@ class Configure(object):
   ouput_dir = None
   root_dir = None
   phantomjs_webdriver = None
+  chrome_webdriver = None
+  native_webdriver = None
   application = "automation"
+  
+  @staticmethod
+  def setconfig(p_dir):
+    if p_dir.endswith("/"):
+       p_dir = p_dir[0:len(p_dir)-1]     
+    Configure.root_dir = p_dir
+            
+  @staticmethod
+  def setoutput(p_dir):
+    if p_dir.endswith("/"):
+       p_dir = p_dir[0:len(p_dir)-1]    
+    Configure.ouput_dir = p_dir
+  
+  @staticmethod              
+  def get_ouput_dir():
+    return Configure.ouput_dir
 
-def get_ouput_dir():
-  return Configure.ouput_dir
+  @staticmethod 
+  def get_application_root_dir():
+    return Configure.root_dir
+  
+  @staticmethod
+  def get_chrome_webdriver():
+    if not Configure.chrome_webdriver:
+      chrome_options = Options()
+      chrome_options.add_argument("--headless")
+      chrome_options.add_argument("--window-size=1280x700")
+      chrome_driver = Configure.get_application_root_dir() + "/chromedriver"
+      Configure.chrome_webdriver = webdriver.Chrome(chrome_options=chrome_options, executable_path=chrome_driver)
+  
+    return Configure.chrome_webdriver
+  
+  @staticmethod
+  def get_phantomjs_webdriver():
+    if not Configure.phantomjs_webdriver:
+      Configure.phantomjs_webdriver = webdriver.PhantomJS()   
+    return Configure.phantomjs_webdriver
 
-def get_application_root_dir():
-  return Configure.root_dir
-
-def get_phantomjs_webdriver():
-  return Configure.phantomjs_webdriver
-
-# instantiate a chrome options object so you can set the size and headless preference
-chrome_options = Options()
-chrome_options.add_argument("--headless")
-chrome_options.add_argument("--window-size=1024x768")
-chrome_driver = "/usr/local/python/library/chromedriver"
-Configure.phantomjs_webdriver = webdriver.Chrome(chrome_options=chrome_options, executable_path=chrome_driver)
-
-#Configure.phantomjs_webdriver = webdriver.PhantomJS()
-
-parent_path = os.path.dirname(sys.path[0])
-Configure.ouput_dir = parent_path + "/" + Configure.application + "/outputs"
-Configure.root_dir = parent_path + "/" + Configure.application
+#parent_path = os.path.dirname(sys.path[0])
+#Configure.ouput_dir = output_file
+#Configure.root_dir = config_file

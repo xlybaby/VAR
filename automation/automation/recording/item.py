@@ -2,7 +2,7 @@
 
 import uuid
 
-from automationsys import get_application_root_dir
+from automationsys import Configure
 
 class ListComponentDisplayItem(object):
     
@@ -78,7 +78,10 @@ class ListComponentDisplayItem(object):
       try:  
         #print key+": "+value
         #item_map[key.encode("utf-8")] = value.encode("utf-8")
-        item_map[key] = value
+        #item_map[key] = value
+        item_map["label"] = key
+        item_map["value"] = value
+        
         href=""
         if self._islink == "True":
           href= item.xpath("@href").extract_first()
@@ -96,7 +99,7 @@ class ListComponentDisplayItem(object):
     return  item_collect
 
   def submit(self, uri, pid, template, tid):
-    taskfile = open(get_application_root_dir()+"/data/task/task_"+pid+".xml", "ab")
+    taskfile = open(Configure.get_application_root_dir()+"/task/task_"+pid+".xml", "ab")
     content = """
                     <crawl>
                         <task>

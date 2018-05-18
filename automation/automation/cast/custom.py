@@ -1,9 +1,6 @@
-#-*-coding:utf-8-*-
+# -*- coding: utf-8 -*-
 
-from selenium import webdriver
-
-from automationsys import get_phantomjs_webdriver
-from automationsys import get_ouput_dir
+from automationsys import Configure
 from automation.performance.actor import Actor
 
 class UserScript(Actor):
@@ -16,8 +13,8 @@ class UserScript(Actor):
     self._async = False
     self.setProperties(p_parameters)
     
-  def do(self):
-    driver = get_phantomjs_webdriver()
+  def do(self, p_location=None):
+    driver = Configure.get_chrome_webdriver()
     if self._script:
       if not self._async:
         driver.execute_script(script=self._script)
@@ -30,7 +27,7 @@ class UserScript(Actor):
   def getProperty(self, p_name):  
     pass
 
-  def getData():
+  def getData(self):
     pass
 
   def setProperties(self, p_parameters):  

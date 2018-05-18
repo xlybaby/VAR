@@ -1,11 +1,9 @@
-#-*-coding:utf-8-*-
+# -*- coding: utf-8 -*-
 
 import os
 import uuid
 
-from automationsys import get_phantomjs_webdriver
-from automationsys import get_ouput_dir
-from automationsys import get_application_root_dir
+from automationsys import Configure
 
 class Storage(object):
 
@@ -29,9 +27,9 @@ class Storage(object):
 
   @staticmethod
   def write_map_result(p_dir=None, p_file_name=None, p_contents=None):
-    driver = get_phantomjs_webdriver()
+    driver = Configure.get_chrome_webdriver()
     curl = driver.current_url
-    file_path = get_ouput_dir()+"/crawl"
+    file_path = Configure.get_ouput_dir()
     if p_dir : 
       file_path += "/" + p_dir
       

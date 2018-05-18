@@ -1,12 +1,8 @@
-#-*-coding:utf-8-*-
+# -*- coding: utf-8 -*-
 import os
 
 from scrapy.selector import Selector 
-
-from selenium import webdriver
-
-from automationsys import get_phantomjs_webdriver
-from automationsys import get_ouput_dir
+from automationsys import Configure
 from automation.performance.actor import Actor
 
 import urllib 
@@ -21,7 +17,7 @@ class Pagination(Actor):
     self._pre = {}
     self.setProperties(p_parameters)
     
-  def do(self):
+  def do(self, p_location=None):
     pass
 
   def duration(self):
@@ -37,6 +33,5 @@ class Pagination(Actor):
     self.findPagination()
 
   def findPagination(self):
-  	driver = get_phantomjs_webdriver()
-  	selector = Selector(text=driver.)
-    pass
+  	driver = Configure.get_chrome_webdriver()
+  	selector = Selector(text=driver.page_sources)

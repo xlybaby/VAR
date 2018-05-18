@@ -3,12 +3,8 @@
 import os
 import re
 
-from selenium import webdriver
 from scrapy.selector import Selector 
-
-from automationsys import get_application_root_dir
-from automationsys import get_phantomjs_webdriver
-from automationsys import get_ouput_dir
+from automationsys import Configure
 from automation.performance.actor import Actor
 from automation.cast.assistant import Locator
 from automation.recording.pagecomponent import PageComponent
@@ -37,7 +33,7 @@ class PageCrawl(Actor):
     #self._pageComponents.collect(p_document=get_phantomjs_webdriver().page_source)
     writebuffer=[]
     containers = self._pageComponents.getContainers()
-    selector = Selector(text=get_phantomjs_webdriver().page_source)
+    selector = Selector(text=Configure.get_chrome_webdriver().page_source)
     for conidx, con in enumerate(containers):
       iters = con.getIterators()
       sel_cons = con.getInstance(p_selector = selector)
@@ -50,7 +46,7 @@ class PageCrawl(Actor):
           sel_items = item.getInstance(p_selector = sel_iters)
           item_xpath = item.getxpath()
           
-          filename = self._datafile + ".con" + str(conidx) +"_iter" + str(iteridx) +"_item" + str(itidx) + ".data"
+          filename = self._datafile + "." + self._tid + "." + self._pid + ".con" + str(conidx) +"_iter" + str(iteridx) +"_item" + str(itidx) + ".data"
           collected = item.collect(p_items=sel_items, p_tid=self._tid)
           Storage.write_map_result(p_dir = self._pid, p_file_name=filename, p_contents = collected)
           #print (sel_items)
@@ -65,7 +61,7 @@ class PageCrawl(Actor):
           uri = nxtlocation[nxtlocation.rfind("/")+1:]
         else:
           uri = nxtlocation
-        taskfile = open(get_application_root_dir()+"/data/task/task_"+self._tid+"_"+uri+".xml", "ab")
+        taskfile = open(Configure.get_application_root_dir()+"/task/task_"+self._tid+"_"+uri+".xml", "ab")
         content = """
                         <crawl>
                             <task>
@@ -142,5 +138,5 @@ class PageCrawl(Actor):
     else:
       self._tid =  ""
          
-  def getData():
+  def getData(self):
     pass

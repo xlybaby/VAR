@@ -1,4 +1,4 @@
-#-*-coding:utf-8-*-
+# -*- coding: utf-8 -*-
 
 from automation.performance.actor import Actor
 
@@ -7,7 +7,7 @@ class CookieHandler(Actor):
   def __init__(self):
     pass
 
-  def do(self):  
+  def do(self, p_location=None):  
     pass
 
   @staticmethod

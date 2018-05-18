@@ -1,13 +1,9 @@
-#-*-coding:utf-8-*-
+# -*- coding: utf-8 -*-
 
 import os
 import re
 
-from selenium import webdriver
-
-from automationsys import get_application_root_dir
-from automationsys import get_phantomjs_webdriver
-from automationsys import get_ouput_dir
+from automationsys import Configure
 from automation.performance.actor import Actor
 from automation.cast.assistant import Locator
 
@@ -52,8 +48,8 @@ class InputComponent(Actor):
       self._class = "'"+p_class+"'" if p_class else "null"
       self._id = "'"+p_id+"'" if p_id else "null"
 
-      self._find_script = open(get_application_root_dir()+"/js/findelements_min.js")
-      self._select_script = open(get_application_root_dir()+"/js/select_min.js")
+      self._find_script = open(Configure.get_application_root_dir()+"/js/findelements_min.js")
+      self._select_script = open(Configure.get_application_root_dir()+"/js/select_min.js")
       self._find_scripts = None
       self._select_scripts = None
       if self._find_script:
@@ -64,9 +60,9 @@ class InputComponent(Actor):
     def input(self, p_value):
       func = u"select('"+p_value+"',"+self._name+","+self._tag+","+self._class+","+self._id+");"
       print (func)
-      get_phantomjs_webdriver().execute_script(self._find_scripts.decode("utf-8")+" "+self._select_scripts.decode("utf-8")+" "+func);
+      Configure.get_chrome_webdriver().execute_script(self._find_scripts.decode("utf-8")+" "+self._select_scripts.decode("utf-8")+" "+func);
 
-  def do(self):  
+  def do(self, p_location=None):  
     lines = self.getData()
     print ("Input get data: "+lines)
 

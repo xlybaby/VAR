@@ -1,9 +1,6 @@
-#-*-coding:utf-8-*-
+# -*- coding: utf-8 -*-
 
-from selenium import webdriver
-
-from automationsys import get_phantomjs_webdriver
-from automationsys import get_ouput_dir
+from automationsys import Configure
 from automation.performance.actor import Actor
 from automation.cast.assistant import Locator
 
@@ -24,7 +21,7 @@ class ClickEvent(Actor):
       for e in  elements :
         e.click()
 
-  def do(self):  
+  def do(self, p_location=None):  
     self.click()
 
   def duration(self):
@@ -38,5 +35,5 @@ class ClickEvent(Actor):
     if duration:
       self._act_time = int(duration)
 
-  def getData():
+  def getData(self):
     pass
