@@ -29,10 +29,12 @@ class Storage(object):
   def write_map_result(p_dir=None, p_file_name=None, p_contents=None):
     driver = Configure.get_chrome_webdriver()
     curl = driver.current_url
-    file_path = Configure.get_ouput_dir()
+    
     if p_dir : 
-      file_path += "/" + p_dir
-      
+      file_path = p_dir
+    else:
+      file_path = Configure.get_ouput_dir()
+            
     if not os.path.exists(file_path):
       os.mkdir(file_path)
 
