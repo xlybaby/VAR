@@ -5,9 +5,13 @@ import sys,os
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
+from automation.performance.connection import HttpConnectionManager
+
 class Configure(object):
   ouput_dir = None
   root_dir = None
+  driver_dir = None
+  
   phantomjs_webdriver = None
   chrome_webdriver = None
   native_webdriver = None
@@ -18,7 +22,13 @@ class Configure(object):
     if p_dir.endswith("/"):
        p_dir = p_dir[0:len(p_dir)-1]     
     Configure.root_dir = p_dir
-            
+  
+  @staticmethod
+  def setdriver(p_dir):
+    if p_dir.endswith("/"):
+       p_dir = p_dir[0:len(p_dir)-1]     
+    Configure.driver_dir = p_dir
+              
   @staticmethod
   def setoutput(p_dir):
     if p_dir.endswith("/"):
@@ -39,11 +49,15 @@ class Configure(object):
       chrome_options = Options()
       chrome_options.add_argument("--headless")
       chrome_options.add_argument("--window-size=1280x700")
-      chrome_driver = Configure.get_application_root_dir() + "/chromedriver"
+      chrome_driver = Configure.driver_dir
       Configure.chrome_webdriver = webdriver.Chrome(chrome_options=chrome_options, executable_path=chrome_driver)
   
     return Configure.chrome_webdriver
   
+  @staticmethod
+  def get_http_lowlevel_webdriver():
+    return HttpConnectionManager.getConnection()
+
   @staticmethod
   def get_phantomjs_webdriver():
     if not Configure.phantomjs_webdriver:
