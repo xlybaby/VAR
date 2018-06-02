@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import hashlib
 
 class Util(object):
 
@@ -25,3 +26,8 @@ class Util(object):
             return p_location + p_uri     
     else:
       return p_uri
+  
+  @staticmethod
+  def hash(p_content):  
+    data=hashlib.sha224(p_content.encode(encoding='UTF-8'))
+    return data.hexdigest()    
