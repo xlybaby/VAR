@@ -108,3 +108,4 @@ venv.bak/
 *.properties
 *.yml
 *.yaml
+.settings/
