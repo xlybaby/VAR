@@ -10,6 +10,7 @@ from automation.performance.connection import HttpConnectionManager
 class Configure(object):
   ouput_dir = None
   root_dir = None
+  extract_dir = None
   driver_dir = None
   
   phantomjs_webdriver = None
@@ -17,6 +18,14 @@ class Configure(object):
   native_webdriver = None
   application = "automation"
   
+  @staticmethod
+  def setextractdir(p_dir):
+    Configure.extract_dir = p_dir
+        
+  @staticmethod
+  def get_extract_dir():
+    return Configure.extract_dir
+    
   @staticmethod
   def setconfig(p_dir):
     if p_dir.endswith("/"):

@@ -42,14 +42,14 @@ class Storage(object):
       p_file_name = "crawl_"+str(uuid.uuid1())+".data"
     print (file_path+"/"+p_file_name)
 
-    ofile = open(file_path+"/"+p_file_name,'ab')
-    ofile.write(bytes(curl+"\n", encoding = "utf8"))
+    ofile = open(file_path+"/"+p_file_name,'w', encoding="utf-8")
+    ofile.write(curl+"\n")
 
     if p_contents:
       for item in p_contents:
         #ofile.write("\n")
         for key in item.keys():
           val = key+": "+item[key]+"\n"
-          ofile.write(bytes(val, encoding = "utf8"))
+          ofile.write(val)
 
       ofile.close()

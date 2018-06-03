@@ -6,6 +6,17 @@ import hashlib
 class Util(object):
 
   @staticmethod
+  def writeextracttask(p_scenarioid, p_sceneno, p_pageno, p_uri):
+    id = Util.hash(p_uri)  
+    
+    data = {  "scenarioId": p_scenarioid, "sceneno":p_sceneno, "pageno": p_pageno, "href": p_uri}  
+    encoded_data = json.dumps(data).encode('utf-8')
+    response = Main.esclient.request( "PUT", 
+                                                           "http://test-mhis-service.pingan.com.cn/elasticsearch/u"+str(p_userid)+"_indice_extract/process_task/"+id,
+                                                           body=encoded_data,
+                                                           headers={"Content-Type":"application/json"})
+    
+  @staticmethod
   def getabsurl(p_location, p_uri):
     if not p_location:
       return p_uri

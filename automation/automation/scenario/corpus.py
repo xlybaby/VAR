@@ -49,7 +49,7 @@ class CorpusCollect(Scenario):
             
       pagination = p_page["pagination"] if "pagination" in p_page else None
       if pagination:
-        self.goNext( p_location=startaddr, p_pagination = pagination, p_selector=selector )
+        self.goNext( p_location=startaddr, p_pagination = pagination, p_selector=selector,p_sceneno=p_sceneno, p_pageno=p_pageno )
               
   def performSpecified(self, p_sceneno, p_pageno):
     try:  
@@ -67,7 +67,7 @@ class CorpusCollect(Scenario):
     self._starttime = datetime.datetime.now()
     
     try:
-      #self.generateCrawler()  
+      self.generateCrawler()  
       scenes = self.getScenes()
       #print (scenes)
       if scenes:
@@ -80,7 +80,7 @@ class CorpusCollect(Scenario):
       self._driver.close()
       print ("Performance done!")      
  
-  def goNext( self, p_location,p_pagination,p_selector ):
+  def goNext( self, p_location, p_pagination, p_selector, p_sceneno, p_pageno):
     if p_pagination:
       maxpageno = p_pagination["maxpageno"] if "maxpageno" in p_pagination else 10  
       paginationsel = p_pagination["selector"]
@@ -94,26 +94,10 @@ class CorpusCollect(Scenario):
       
       print ("generate next page task")
       if selpagination:
-        print (selpagination)      
         nxtlocation = selpagination.xpath("@href").extract_first()
-        print ( "next location: " + Util.getabsurl(p_location=p_location, p_uri=nxtlocation) )
-#         if nxtlocation.rfind("/") >=0:
-#           uri = nxtlocation[nxtlocation.rfind("/")+1:]
-#         else:
-#           uri = nxtlocation
-#         taskfile = open(Configure.get_application_root_dir()+"/task_"+self._tid+"_"+uri+".xml", "ab")
-#         content = """
-#                         <crawl>
-#                             <task>
-#                                 <pid>%s</pid>
-#                                 <uri>%s</uri>
-#                                 <template>%s</template>
-#                                 <id>%s</id>
-#                             </task>
-#                         </crawl>
-#                         """ % (self._pid, Util.getabsurl(p_location, nxtlocation), self._pageComponents.getTemplate(), self._tid)
-#         taskfile.write(bytes(content, encoding = "utf8"))                
-#         taskfile.close()    
+        abslocation = Util.getabsurl(p_location=p_location, p_uri=nxtlocation)
+        print ( "next location: " + abslocation )
+        Util.writeextracttask(p_scenarioid=self.getId(), p_sceneno=p_sceneno, p_pageno=p_pageno, p_uri=abslocation)
 
 class  SubCrawler(threading.Thread):
     
@@ -129,16 +113,31 @@ class  SubCrawler(threading.Thread):
     starttime = datetime.datetime.now()
     lasts = 0
     while lasts < self._duration :  
-      path = Configure.get_ouput_dir() + "/extract"   
+      path = Configure.get_extract_dir()
       files= os.listdir(path)  
-      if files:
+      if files and len(files)>0:
         if self._rlock.acquire(blocking=False) :
           try:
-            file = files[0]
-            print (file)  
+            print ("file: " + path+"/"+files[0])  
+            if not files[0].startswith("task_"):
+              continue
+          
+            file = open(path+"/"+files[0],"rb")
+            contents = file.read()
+            print (str(contents))
+#             url = file.readline()
+#             scenarioId = file.readline()
+#             sceneno = file.readline()
+#             pageno = file.readline()
+            file.close()
+            os.remove(path+"/"+files[0])
+            #print ( "find new task[%s]: [%s] , scene[%d], page[%d]" % (files[0], url, int(sceneno), int(pageno) ) )   
+                     
           finally:
             self._rlock.release()     
-                             
+        else:
+          print ("Not get lock")       
+                        
       time.sleep(2)
       interval = datetime.datetime.now() - starttime
       lasts = interval.seconds

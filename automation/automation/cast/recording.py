@@ -64,9 +64,7 @@ class PageCrawl(Actor):
           item_map["next"] = href
         if p_extract  == 1:
           print ("need submit extract link")
-          taskfile = open(Configure.get_ouput_dir()+"/extract/"+Util.hash(p_content=item_map["next"]), "ab")
-          taskfile.write(bytes(item_map["next"]+"\n"+self._scenario.getId()+"\n"+str(self._sceneno)+"\n"+str(self._pageno+1), encoding = "utf8"))                
-          taskfile.close() 
+          Util.writeextracttask(p_scenarioid=self._scenario.getId(), p_sceneno=self._sceneno, p_pageno=self._pageno, p_uri= item_map["next"])
           #self.submit(item_map["next"], item_map["item_id"], self._nextpagetemp, p_tid)
       
       return item_map
