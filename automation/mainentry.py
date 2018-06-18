@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import sys,os
 import json
-import urllib3
 
 from pip._vendor.requests.models import PreparedRequest
 
@@ -13,7 +12,6 @@ from automationsys import Configure
 from automation.performance.director import Executor
 
 class Main(object):
-  esclient = None
   
   @staticmethod
   def _init(p_usrid, p_udir, p_uout, p_ex, p_driver):
@@ -28,50 +26,7 @@ class Main(object):
     Configure.setoutput(p_dir=p_uout)
     Configure.setextractdir(p_dir=p_ex)
     Configure.setdriver(p_dir=p_driver)
-    Main.esclient = urllib3.HTTPConnectionPool('test-mhis-service.pingan.com.cn', maxsize=10)
-    
-    #create user extract index
-    response = Main.esclient.request( "GET", 
-                                                           "http://test-mhis-service.pingan.com.cn/elasticsearch/u"+str(p_usrid)+"_indice_extract/process_task/_mapping",
-                                                           body=None,
-                                                           headers={"Content-Type":"application/json"})
-    if not (response.status == 200) :
-      data = {  "settings": {
-                              "index":{
-                                  "number_of_shards": 3,
-                                  "number_of_replicas":1
-                               }
-                   },
-                   "mappings": {
-                       "process_task": {
-                           "properties": {
-                                 "scenarioId": {
-                                       "type":"keyword"
-                                     },
-                                  "href": {
-                                       "type":"text"
-                                     },
-                                  "sceneno": {
-                                       "type":"integer"
-                                     },
-                                  "gageno": {
-                                       "type":"integer"
-                                     },
-                                  "configuration": {
-                                      "type":"object"
-                                      }
-                               }
-                        }
-                   }
-                }  
-      encoded_data = json.dumps(data).encode('utf-8')
-      response = Main.esclient.request( "PUT", 
-                                                           "http://test-mhis-service.pingan.com.cn/elasticsearch/u"+str(p_usrid)+"_indice_extract",
-                                                           body=encoded_data,
-                                                           headers={"Content-Type":"application/json"})
-      if not (response.status == 200) :
-        print ("User extract task indice did not create.")
-      print (response.data.decode('utf-8'))
+    Configure.set_es_client()
     
   @staticmethod
   def init(p_usrid, p_driver):
@@ -89,7 +44,7 @@ class Main(object):
                    }
                 }  
     encoded_data = json.dumps(data).encode('utf-8')
-    response = Main.esclient.request( "GET", 
+    response = Configure.get_es_client().request( "GET", 
                                                            "http://test-mhis-service.pingan.com.cn/elasticsearch/u"+str(p_userid)+"_indice_base/custom_task/_search?pretty",
                                                            body=encoded_data,
                                                            headers={"Content-Type":"application/json"})
@@ -110,4 +65,4 @@ class Main(object):
     pass
   
 Main.init( p_usrid=10000, p_driver="/usr/local/python/webdriver/chromedriver" )                                                                           
-#Main.submit_user_specified_task_immediately( 10000, "1617751b-3242-4f3e-a507-a646ad688c0c" )
+Main.submit_user_specified_task_immediately( 10000, "eab9c721-1c40-4520-b3c5-fe610d82b653" )

@@ -12,144 +12,82 @@ from automation.cast.assistant import Locator
 from automation.recording.pagecomponent import PageComponent
 from automation.cast.persistent import Storage
 from automation.performance.util import Util
+from automation.cast.recording import PageCrawl
 
 class PageKVCrawl(Actor):
 
-  def __init__(self, p_selector,p_type, p_id, p_class, p_xpath, p_name, p_tag, p_parameters,p_data_model=None):
-    Actor.__init__(self, p_selector,p_type, p_id, p_class, p_xpath, p_name, p_tag)
-    self._selector=p_selector
-    self._act_time = None
-    self._configure_file =  None
-    self._pageComponents = None
-    self._pid = None
-    self._datafile = None
-    self._tid=None
-    
+  def __init__(self, p_scenario, p_parameters, p_sceneno, p_pageno, p_pageid=None):
+    #Actor.__init__(self, p_selector,p_type, p_id, p_class, p_xpath, p_name, p_tag)
+    self._scenario = p_scenario
+    self._pageid = p_pageid
     self.setProperties(p_parameters)
-    self.init()
+    self._item_id = 0
+    
+    self._sceneno = p_sceneno
+    self._pageno = p_pageno
 
-  def init(self):
-    self._pageComponents = PageComponent( p_configure_file=self._configure_file, p_pid=self._pid,p_kv=True )
-
-  def do(self, p_location=None):
-    #self._pageComponents.collect(p_document=get_phantomjs_webdriver().page_source)
-    writebuffer=[]
-    containers = self._pageComponents.getContainers()
-    selector = Selector(text=Configure.get_chrome_webdriver().page_source)
-    for conidx, con in enumerate(containers):
-      iters = con.getIterators()
-      sel_cons = con.getInstance(p_selector = selector)
-      con_xpath = con.getxpath()
-      for iteridx, iterator in enumerate(iters):
-        kvitems=iterator.getItems()
-        sel_iters = iterator.getInstance(p_selector = sel_cons)
-        iter_xpath = iterator.getxpath()
-        for itidx, kvitem in enumerate(kvitems):
-          keyitem = kvitem.getkey()
-          valitem = kvitem.getvalue()    
-          kvcollected = []
-          for sel_iteridx, sel_iter in enumerate(sel_iters):
-            
-            sel_keyitems=sel_iter.xpath(keyitem.getxpath())
-            keycollected = keyitem.collect(p_items=sel_keyitems, p_tid=self._tid)
-            sel_valitems=sel_iter.xpath(valitem.getxpath())
-            valcollected = valitem.collect(p_items=sel_valitems, p_tid=self._tid)
-            if len(keycollected)>0 and len(valcollected)>0 :
-              for idx, key in enumerate(keycollected):
-                kvcollecteditem={}    
-                kvcollecteditem["key"] = keycollected[idx]["label"] + ":" + keycollected[idx]["value"] 
-                kvcollecteditem["value"] = valcollected[idx]["label"] + ":" + valcollected[idx]["value"]  
-                kvcollected.append(kvcollecteditem)
-          filename = self._datafile + "." + self._tid + "." + self._pid + ".con" + str(conidx) +"_iter" + str(iteridx) +"_item" + str(itidx)
-          Storage.write_map_result(p_dir = self._pid, p_file_name=filename, p_contents = kvcollected)
-          #print (sel_items)
-    pagination = self._pageComponents.getPagination()
-    if pagination:
-      print ("generate next page task")
-      pagcomp = pagination.getInstance(p_selector=selector)
-      if pagcomp:
-        print (pagcomp)      
-        nxtlocation = pagcomp.xpath("@href").extract_first()
-        if nxtlocation.rfind("/") >=0:
-          uri = nxtlocation[nxtlocation.rfind("/")+1:]
-        else:
-          uri = nxtlocation
-        taskfile = open(Configure.get_application_root_dir()+"/task_"+self._tid+"_"+uri+".xml", "ab")
-        content = """
-                        <crawl>
-                            <task>
-                                <pid>%s</pid>
-                                <uri>%s</uri>
-                                <template>%s</template>
-                                <id>%s</id>
-                            </task>
-                        </crawl>
-                        """ % (self._pid, Util.getabsurl(p_location, nxtlocation), self._pageComponents.getTemplate(), self._tid)
-        taskfile.write(bytes(content, encoding = "utf8"))                
-        taskfile.close()
-#     for conidx, con in enumerate(containers):
-#       print(con)
-#       sel_con = con.getInstance(p_selector=selector)
-#       #print (sel_con)
-#       iters = con.getIterators()
-#       for iteridx, iterator in enumerate(iters):
-#         sel_iter = iterator.getInstance(p_selector=sel_con)
-#         for idx, iter in enumerate(sel_iter): 
-#           #print (iterator.getItems())
-#           for itemidx, item in enumerate(iterator.getItems()):
-#             #print( item.getindex() )  
-#             selitems =  item.getInstance(p_selector=iter)
-#             if item.getindex():
-#               tmp_items=[]
-#               tmp_items.append(selitems[int(item.getindex())-1])
-#               collected = item.collect(p_items=tmp_items)
-#             else:
-#               collected = item.collect(p_items=selitems)  
-#             Storage.write_map_result(p_dir = self._pid, p_file_name=self._datafile, p_contents = collected)
-#             #print(selitems[int(item.getindex())-1])
-#           #print (iter)
-#         #print (sel_iter)
+  def do(self, p_selector=None, p_pageid=None):
+    data = {}  
+    data["keylabel"] = self._key_label
+    if self._key_components:
+      crawler = PageCrawl(p_scenario=self._scenario, p_parameters=None, p_sceneno=0, p_pageno=0, p_pageid=p_pageid)
+      kitem_collect = crawler.crawlcon(p_containers=self._key_components, p_selector=p_selector)   
+      print (kitem_collect)
+      data["keydata"] = kitem_collect
+    else:
+      data["keyvalue"] = self._key_value
+          
+    if self._value_ary:
+      data["values"] = {}  
+      for idx, value in enumerate(self._value_ary) :
+        label = value["label"]
+        #print (label)
+        containers = value["components"]
+        crawler = PageCrawl(p_scenario=self._scenario, p_parameters=None, p_sceneno=0, p_pageno=0, p_pageid=p_pageid)
+        item_collect = crawler.crawlcon(p_containers=containers, p_selector=p_selector)   
+        #print (item_collect)
+        data["values"][label] = item_collect
         
-#         items = iterator.getItems()
-#         for itemidx, item in enumerate(items):
-#           sel_item = item.getInstance(p_selector=sel_iter)
-          #index = item.getindex()
-#           if index:
-#             tmp_items=[]
-#             tmp_items.append(sel_item[int(index)])
-#             collected = item.collect(p_items=tmp_items)
-#           else:
-#           collected = item.collect(p_items=sel_item)
-#           #print (collected)
-#           Storage.write_map_result(p_dir = self._pid, p_contents = collected)
-
+    return data
+        
   def duration(self):
     return self._act_time
 
   def getProperty(self, p_name):  
     pass
 
+  #   kvv-mapping
+#        key
+#          label
+#          value
+#          components[optional]
+#        values
+#          value1
+#            label
+#            components
+#          value2
+#            label
+#            components
+#            ...
+#          valuen
+#            label
+#            components
+           
   def setProperties(self, p_parameters):  
-    duration = p_parameters["duration"] if "duration" in p_parameters else None
-    configure = p_parameters["configure"] if "configure" in p_parameters else None
-    datafile = p_parameters["datafile"] if "datafile" in p_parameters else None
-    taskid = p_parameters["taskid"] if "taskid" in p_parameters else None
-    pid = p_parameters["pid"] if "pid" in p_parameters else None
-    
-    if duration:
-      self._act_time = int(duration)
-    if configure:
-      self._configure_file = configure
-    if pid:
-      self._pid = pid
-    else:
-      self._pid = ""
-    if datafile:
-      self._datafile = datafile
-    if taskid:
-      self._tid = taskid
-    else:
-      self._tid =  ""
-         
-  def getData(self):
-    pass
+    pageComponent =   p_parameters["pageComponent"] if "pageComponent" in p_parameters else None
+    if pageComponent: 
+      kvvmapping = pageComponent["kvv-mapping"] if "kvv-mapping" in pageComponent else None
+      if kvvmapping:
+        keyobj = kvvmapping["key"] if "key" in kvvmapping else None
+        
+        self._key_label = keyobj["label"] if "label" in keyobj else None
+        self._key_value = keyobj["value"] if "value" in keyobj else None
+        self._key_components = keyobj["components"] if "components" in keyobj else None
+        
+        values = kvvmapping["values"] if "values" in kvvmapping else None  
+        
+        self._value_ary = []
+        for value in values.values():
+          self._value_ary.append(value)        
+          
+        

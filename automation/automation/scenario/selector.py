@@ -15,7 +15,16 @@ class PageElementFinder(object):
     
     if p_xpath:
       xpath = p_xpath
-
+      if p_relative:
+        if xpath.startswith("//"):
+          xpath = "."+xpath
+        elif xpath.startswith("/"):
+          xpath = ".//"+xpath[1:]  
+        elif xpath.startswith(".//"):
+          pass  
+        else:
+          xpath = ".//"+xpath
+            
     else:
       if p_relative:  
         xpath=".//";
@@ -42,12 +51,10 @@ class PageElementFinder(object):
         express+="contains(@class, '"+p_class+"')"
  
       if p_attrs:
-        kvs = p_attrs.split(",")
-        for kv in kvs:
-          kvpair = kv.split("=")
+        for (k,v) in  p_attrs.items():
           if len(express) > 0 :
             express+=" and "
-          express+="contains(@"+kvpair[0]+", '"+kvpair[1]+"')"
+          express+="contains(@"+k+", '"+v+"')"
           
       if len(express) > 0 :
         express="["+express+"]"
@@ -57,6 +64,6 @@ class PageElementFinder(object):
       if p_index:
         xpath += "["+p_index+"]"    
         
-    #print(xpath)    
+    print(xpath)    
     return p_selector.xpath(xpath)
         

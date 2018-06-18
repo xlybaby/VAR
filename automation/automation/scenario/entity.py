@@ -5,6 +5,7 @@ class Scenario(object):
 
   def __init__(self, p_scenario):
     self._type = None
+    self._typename = None
     self._id = None
     self._title = None
     self._schedule = None
@@ -12,6 +13,7 @@ class Scenario(object):
     self._scenes = None
     self._maxduration = 5*60#seconds
     self._maxthreads = None
+    self._automation = None
     self._ini_(p_scenario = p_scenario)
 
   def perform(self, p_pageno=0):
@@ -23,6 +25,9 @@ class Scenario(object):
   
     self._parser = JSONParser(scenelist)
     #sence_queue = Translator.populate(script)
+
+  def getAutomation(self):
+    return self._automation
 
   def getSchedule(self):
     return self._schedule    
@@ -37,6 +42,9 @@ class Scenario(object):
   def getType(self):
     return self._type
 
+  def getTypename(self):
+    return self._typename
+
   def getUser(self):
     return self._user
   
@@ -44,11 +52,14 @@ class Scenario(object):
     return self._maxduration
 
   def getThreadnum(self):
-    return self._maxthreads
+    return 1#self._maxthreads
 
   def _ini_(self, p_scenario):
     if "scenarioType" in p_scenario :
       self._type = p_scenario["scenarioType"] 
+      
+    if "scenarioTypeName" in p_scenario :
+      self._typename = p_scenario["scenarioTypeName"]   
       
     if "scenarioId" in p_scenario :  
       self._id = p_scenario["scenarioId"] 
@@ -71,4 +82,7 @@ class Scenario(object):
       
     if "maxThreadNum" in p_scenario :
       self._maxthreads = p_scenario["maxThreadNum"]
-      print (self._maxthreads)
+      
+    if "automation" in p_scenario :
+      self._automation = p_scenario["automation"]
+    

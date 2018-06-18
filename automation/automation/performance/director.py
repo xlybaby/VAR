@@ -2,6 +2,7 @@
 
 import os
 from scrapy.selector import Selector 
+from apscheduler.schedulers.background import BackgroundScheduler
 
 from automationsys import Configure
 from automation.cast.cookie import CookieHandler
@@ -22,7 +23,18 @@ class Executor(object):
     schedule =  self._scenario.getSchedule()
     print (schedule)
     if schedule :
-      pass
+      unit = schedule["unit"]
+      interval = schedule["interval"]
+      
+      scheduler = BackgroundScheduler()
+      scheduler.add_job(self._scenario.perform, 'interval', seconds=interval)
+      scheduler.start()
+      try:
+        while True:
+            time.sleep(2)
+      except (KeyboardInterrupt, SystemExit):
+        scheduler.shutdown()
+        
     else :
       #Perform once    
       self._scenario.perform()
