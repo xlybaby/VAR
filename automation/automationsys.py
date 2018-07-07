@@ -2,11 +2,13 @@
 
 import sys,os
 import urllib3
+import ssl
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
 from automation.performance.connection import HttpConnectionManager, HeadlessWebDriverManager
+from automation.performance.rule import CrawlController
 
 class Configure(object):
   ouput_dir = None
@@ -19,6 +21,8 @@ class Configure(object):
   native_webdriver = None
   application = "automation"
   esclient = None
+  crawlController = None
+  user_agent="Headless Web Browser, Python3.x, Scrapy1.x"
   
   @staticmethod
   def get_es_client():
@@ -64,7 +68,7 @@ class Configure(object):
   
   @staticmethod
   def get_chrome_webdriver():
-    return HeadlessWebDriverManager.getConnection()  
+    return HeadlessWebDriverManager.getConnection(p_driverpath=Configure.driver_dir)  
 #     if not Configure.chrome_webdriver:
 #       chrome_options = Options()
 #       chrome_options.add_argument("--headless")
@@ -84,6 +88,26 @@ class Configure(object):
       Configure.phantomjs_webdriver = webdriver.PhantomJS()   
     return Configure.phantomjs_webdriver
 
+  @staticmethod
+  def set_crawl_controller():
+    Configure.crawlController = CrawlController()
+     
+  @staticmethod
+  def get_crawl_controller():
+    return Configure.crawlController
+       
+  @staticmethod
+  def set_default_https_context():
+    ssl._create_default_https_context = ssl._create_unverified_context
+
+  @staticmethod
+  def set_user_agent(p_ua):
+    Configure.user_agent=p_ua
+    
+  @staticmethod
+  def get_user_agent():    
+    return Configure.user_agent
+              
 #parent_path = os.path.dirname(sys.path[0])
 #Configure.ouput_dir = output_file
 #Configure.root_dir = config_file

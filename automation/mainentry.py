@@ -27,6 +27,8 @@ class Main(object):
     Configure.setextractdir(p_dir=p_ex)
     Configure.setdriver(p_dir=p_driver)
     Configure.set_es_client()
+    Configure.set_crawl_controller()
+    Configure.set_default_https_context()
     
   @staticmethod
   def init(p_usrid, p_driver):
@@ -65,4 +67,4 @@ class Main(object):
     pass
   
 Main.init( p_usrid=10000, p_driver="/usr/local/python/webdriver/chromedriver" )                                                                           
-Main.submit_user_specified_task_immediately( 10000, "eab9c721-1c40-4520-b3c5-fe610d82b653" )
+Main.submit_user_specified_task_immediately( 10000, "0783890d-0fdc-4e39-8c21-0ea9a1ee762a " )

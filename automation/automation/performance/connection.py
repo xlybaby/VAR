@@ -12,11 +12,11 @@ class HeadlessWebDriverManager(object):
     self._chrome = p_driver
         
   @staticmethod
-  def getConnection(p_width=1280, p_height=700):
+  def getConnection(p_width=1280, p_height=700, p_driverpath=None):
     chrome_options = Options()
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--window-size="+str(p_width)+"x"+str(p_height))
-    driver = webdriver.Chrome(chrome_options=chrome_options, executable_path="/usr/local/python/webdriver/chromedriver")
+    driver = webdriver.Chrome(chrome_options=chrome_options, executable_path=p_driverpath)
   
     return HeadlessWebDriverManager(p_driver=driver)
 
