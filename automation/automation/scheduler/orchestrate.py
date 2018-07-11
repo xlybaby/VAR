@@ -10,6 +10,7 @@ from multiprocessing import Process
 import apscheduler.executors.pool
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.schedulers.blocking import BlockingScheduler
+from apscheduler.schedulers.tornado import TornadoScheduler
 
 import tornado.ioloop
 import tornado.gen
@@ -24,10 +25,11 @@ from automation.common.elasticsearch import ESHandler
 from automation.common.network import SimpleTcpclient
 from automation.common.constants import StatusCode
 
-class ParellelSchedule(Process):
+class ParellelSchedule(threading.Thread):
     
   def __init__(self, p_main_jod_queue=None):
-    Process.__init__(self)  
+    #Process.__init__(self)  
+    threading.Thread.__init__(self)  
     self._scheduler = None
     #self._crawler_maps = None
     #self._crawlerPicker = p_crawler_picker
@@ -58,7 +60,7 @@ class ParellelSchedule(Process):
                 'coalesce': True,
                 'max_instances': 1
                  }
-        self._scheduler = BlockingScheduler(executors=executors, job_defaults=job_defaults, timezone=utc)  
+        self._scheduler = BackgroundScheduler(executors=executors, job_defaults=job_defaults, timezone=utc)  
         self._jobs={}
         for jobkey in inijobs.keys():
           jobitem = inijobs[jobkey]
@@ -74,9 +76,18 @@ class ParellelSchedule(Process):
       print ("Job initialize error")
     finally:
       self._inijoblock.release()
-                
+  
+  @tornado.gen.coroutine 
+  def sync(self):
+    while True:
+        yield tornado.gen.sleep(10)    
+        print ("start put message to queue")
+        yield self._master_job_queue.put({"test":"message"})
+        print ("after put message")
+                      
   def run(self):
     self.initJobs()
+    #self.sync()
     #tornado.ioloop.IOLoop.current().start()
 
   def shutdown(self):
@@ -104,20 +115,26 @@ class Job(object):
   def __call__(self):
     print ("job %s running...", self._name)  
     self._last_exec_time = datetime.datetime.now()
-    futures = []  
-    for i in range(self._threadnum):
-      future = self._job_fetch_pool.submit(self.sync, self._name, i, self._threadnum, self._batchnum, self._indice, self._type )
-      futures.append(future)
+    #futures = []  
+    #for i in range(self._threadnum):
+    # future = self._job_fetch_pool.submit(self.sync, self._name, i, self._threadnum, self._batchnum, self._indice, self._type )
+    # futures.append(future)
       
-    for fu in futures:
-      res = fu.result()
-      
+    #for fu in futures:
+    #  res = fu.result()
+    #self.sync()  
     self._last_exec_duration = (datetime.datetime.now()-self._last_exec_time).seconds 
   
   def handle(self, data):
     pass
-    
-  def sync(self, p_name, p_tindex, p_threadnum, p_batchnum, p_indice, p_type ):
+   
+  #@tornado.gen.coroutine 
+  def sync(self):
+        print ("job start put message to queue")
+        yield self._main_job_queue.put({"test":"message"})
+        print ("after put message")
+        
+  def sync1(self, p_name, p_tindex, p_threadnum, p_batchnum, p_indice, p_type ):
     size = p_batchnum  
     loop=0
   
@@ -206,11 +223,11 @@ class CrawlerRegister(Process):
     return json.dumps(ret)
 
 
-class JobSync(Process):
+class JobSync(threading.Thread):
     
     def __init__(self, p_queue, p_register, p_crawler_picker=None, p_clientnum=1):
-      #threading.Thread.__init__(self)
-      Process.__init__(self)
+      threading.Thread.__init__(self)
+      #Process.__init__(self)
       self._crawlerPicker = p_crawler_picker
       self._main_queue = p_queue
       self._register = p_register
@@ -229,6 +246,7 @@ class JobSync(Process):
       print ("Start connect to register server: ", self._register["host"], self._register["port"])  
       self.stream = yield TCPClient().connect(self._register["host"], self._register["port"])
       print ("Start update node list from register server...")
+      count=0
       try:
 
         while True:
@@ -238,30 +256,51 @@ class JobSync(Process):
           self.stream.write(encode_json.encode()+b"\n")
           rec=yield self.stream.read_until(b'\n')
           print ('recive from the server',rec)
-          
+          #test
+          if count >=1:
+            continue
+        
+          m={"host":"localhost","port":8088}
+          client = SimpleTcpclient(p_mq=self._main_queue, p_server_map=m)
+          client.start()
+      
+          m1={"host":"localhost","port":8089}
+          client1 = SimpleTcpclient(p_mq=self._main_queue, p_server_map=m1)
+          client1.start()
+      
+          m2={"host":"localhost","port":8087}
+          client2 = SimpleTcpclient(p_mq=self._main_queue, p_server_map=m2)
+          client2.start()
+          count = count+1
       except tornado.iostream.StreamClosedError:
         print ("JobSync update met error")
     
-    #@tornado.gen.coroutine
+    @tornado.gen.coroutine
     def sync(self):
       while True:
         print ("Start read message from sync queue")  
-        data = yield self._main_queue.get()
+        future = yield self._main_queue.get()
+        data = yield future.result()
         try:
           print ("JobSync got message: ",data)   
         finally:
           self._main_queue.task_done()
-              
+    
+    @tornado.gen.coroutine
+    def test(self): 
+       while True:
+          yield tornado.gen.sleep(10)    
+          print ("start put message to queue")
+          yield self._main_queue.put({"test":"message"})
+          print ("after put message")      
+                 
     def run(self):
       #self.sync()  
       #print ("Start job sync...")  
       self.update()
       print ("Start nodelist updator...")
+      #self.test()
       
-      #test
-      m={"host":"localhost","port":8088}
-      client = SimpleTcpclient(p_mq=self._main_queue, p_server_map=m)
-      client.start()
 #       self._serverclient = SimpleTcpclient(p_mq=self._main_queue, p_server_map=m)
 #       self._serverclient.start()  
 #       #asyncio.set_event_loop(asyncio.new_event_loop())

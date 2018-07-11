@@ -8,7 +8,7 @@ import queue
 from multiprocessing import Manager
 from multiprocessing.managers import BaseManager
 
-from tornado.queues import Queue
+#from tornado.queues import Queue
 
 parent_path = os.path.dirname(sys.path[0])
 if parent_path not in sys.path:
@@ -21,6 +21,7 @@ from automation.scheduler.orchestrate import ParellelSchedule
 from automation.scheduler.orchestrate import CrawlerRegister
 from automation.scheduler.orchestrate import CrawlerPicker
 from automation.scheduler.orchestrate import JobSync
+from automation.common.asyncqueue import ThreadSafeQueue
 
 class Main(object):    
   es_client=None
@@ -48,8 +49,9 @@ class Main(object):
     #Initialize job schedule
     crawler_picker = CrawlerPicker()
     #main_jod_queue = queue.Queue(Configure.configure().value("scheduler.messageQueueSize", p_default=1000))
-    main_jod_queue = manager.Queue(Configure.configure().value("scheduler.messageQueueSize", p_default=1000))
+    #main_jod_queue = manager.Queue(Configure.configure().value("scheduler.messageQueueSize", p_default=1000))
     #main_jod_queue = Queue(maxsize=Configure.configure().value("scheduler.messageQueueSize", p_default=1000))
+    main_jod_queue = ThreadSafeQueue(size=Configure.configure().value("scheduler.messageQueueSize", p_default=1000))
     
     Main.parellelSchedule=ParellelSchedule(p_main_jod_queue=main_jod_queue)
     Main.parellelSchedule.start()

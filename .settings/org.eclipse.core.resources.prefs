@@ -8,6 +8,7 @@ encoding//automation/automation/cast/recordingkv.py=utf-8
 encoding//automation/automation/cast/screen.py=utf-8
 encoding//automation/automation/cast/xpathhandler.py=utf-8
 encoding//automation/automation/common/application.py=utf-8
+encoding//automation/automation/common/asyncqueue.py=utf-8
 encoding//automation/automation/common/constants.py=utf-8
 encoding//automation/automation/common/elasticsearch.py=utf-8
 encoding//automation/automation/common/logging.py=utf-8

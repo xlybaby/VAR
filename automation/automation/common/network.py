@@ -165,8 +165,10 @@ class SimpleTcpclient(object):
       
       while True:
         try:     
-          print("waiting message from queue...")
-          data = self._mq.get(block=True) 
+          print("Tcpclient waiting message from queue...", self._host, self._port)
+          data = yield self._mq.get() 
+          #data = yield future.result()
+          print("Tcpclient got message from queue...", self._host, self._port, data)
           if self._stream == None :
             print ("Tcp client start to send message, but the stream is closed")
             try:
