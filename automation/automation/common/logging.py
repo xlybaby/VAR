@@ -28,6 +28,8 @@ class Logger(object):
     Logger.logger = logging.getLogger()
     Logger.logger.addHandler(log_file_handler)
     
+    logging.getLogger('apscheduler').setLevel(logging.ERROR)
+    
   @staticmethod  
   def getLogger():
     return Logger.logger

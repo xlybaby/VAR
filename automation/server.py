@@ -28,8 +28,8 @@ class MyTcpServer( TCPServer ):
         
 if __name__ == '__main__':
     server = MyTcpServer()
-    server.listen( 8036 )
+    server.listen( 8088 )
     server.start()
     print ("Server starts ...")
     ioloop.IOLoop.current().start()
-    print ("Server starts listen on 8036...")
+    print ("Server starts listen on 8088...")

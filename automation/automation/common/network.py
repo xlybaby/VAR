@@ -54,7 +54,7 @@ class SimpleTcpServer( TCPServer ):
     @gen.coroutine
     def handle_stream( self, stream, address ):
         try:
-            #while True:
+            while True:
                 #print ("server starts waiting...")
                 data = yield stream.read_until(b"\n")
                 #jsonobj = json.loads(data.decode())
@@ -156,7 +156,9 @@ class SimpleTcpclient(object):
     @gen.coroutine
     def start(self):
       try:
+        print ("Connecting remote server", self._host, self._port)
         self._stream = yield self._tcpclient.connect(self._host, self._port, max_buffer_size=self._max_buf_size, timeout=self._timeout)
+        print ("Remote server connected", self._host, self._port)
       except StreamClosedError:
         self._stream = None
         print ("Tcp client starts error, remote server connection couldn't reach.", self._host, self._port, self._max_buf_size, self._timeout)
@@ -176,16 +178,21 @@ class SimpleTcpclient(object):
               continue
           
           sendmsg = json.dumps(data)
-          print ("sendmsg",sendmsg)
           self._stream.write(sendmsg.encode()+b"\n")
-          rec=yield self._stream.read_until(b'\n')
+          #rec=yield self._stream.read_until(b'\n')
+          #fut=self._stream.read_until(b'\n')
+          #print (fut)
+          rec = yield from asyncio.wait_for(self._stream.read_until(b'\n'), 10)
           print ("rec",rec)
           if self._handler:
             self._handler(data=rec)
         except StreamClosedError:
           self._stream = None  
           print ("remote server's connection is closed.")
-          
+        except asyncio.TimeoutError:  
+          print ("Reading from server occurs timeout exception.")
+          self._stream = None
+              
     def close(self):
       if self._stream:
         self._stream.close()
