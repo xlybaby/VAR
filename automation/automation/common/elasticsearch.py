@@ -48,15 +48,26 @@ class ESHandler(object):
     
     if p_qry_map==None :
       queryexp["match_all"] = {}
-    else:
-      queryexp["term"]=p_qry_map
-                   
-    data = {  
+      data = {  
                "from" : p_from,
                "size": sizeexp,
                "query": queryexp
-                }  
+                }
+    else:
+      queryexp = []
+      for item in p_qry_map:
+        queryexp.append({"match":item})
+      data = {
+              "from" : p_from,
+              "size": sizeexp,
+              "query": { 
+                "bool": { 
+                  "must": queryexp
+                 }
+                }
+              }
     encoded_data = json.dumps(data).encode('utf-8')
+    print ("elasticsearch start search", encoded_data)
     response = self._es_client.request( "GET", 
                                             self._es_url+"/"+p_indice+"/"+p_type+"/_search?pretty",
                                             body=encoded_data,

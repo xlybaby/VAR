@@ -25,11 +25,11 @@ from automation.common.elasticsearch import ESHandler
 from automation.common.network import SimpleTcpclient
 from automation.common.constants import StatusCode
 
-class ParellelSchedule(threading.Thread):
+class ParellelSchedule(Process):
     
   def __init__(self, p_main_jod_queue=None):
-    #Process.__init__(self)  
-    threading.Thread.__init__(self)  
+    Process.__init__(self)  
+    #threading.Thread.__init__(self)  
     self._scheduler = None
     #self._crawler_maps = None
     #self._crawlerPicker = p_crawler_picker
@@ -42,7 +42,7 @@ class ParellelSchedule(threading.Thread):
 #   def getCrawlerMaps(self):
 #     return self._crawler_maps
 
-  def initJobs(self):
+  def initJobs1(self):
     try:
       if self._scheduler != None:
         return
@@ -77,18 +77,39 @@ class ParellelSchedule(threading.Thread):
     finally:
       self._inijoblock.release()
   
-  @tornado.gen.coroutine 
-  def sync(self):
-    while True:
-        yield tornado.gen.sleep(10)    
-        print ("start put message to queue")
-        yield self._master_job_queue.put({"test":"message"})
-        print ("after put message")
+  #@tornado.gen.coroutine 
+  def initJobs(self, p_jobSync):
+    try:
+      print ("start sync")
+      if self._inijoblock.acquire(blocking=False) == False:
+        return  
+      print ("############  Start initialize sync coroutines  #############")  
+      inijobs = Configure.configure().value("scheduler.threads")
+      if len(inijobs) > 0:  
+        for jobkey in inijobs.keys():
+          jobitem = inijobs[jobkey]
+          parallelnum = jobitem["threadsNum"]
+          for idx in range(parallelnum):
+            job = Job(p_name=jobkey, p_queue=self._master_job_queue, p_interval=jobitem["interval"], p_threads=jobitem["threadsNum"], p_batchnum=jobitem["batchnum"], p_indice=jobitem["indice"], p_type=jobitem["type"], p_index=idx, p_jobSync=self._jobSync )
+            print ("Initial jod ", job)
+            job.start()
+    except:
+      traceback.print_exc()
+      print ("sync coroutines initialize error")
+    finally:
+      self._inijoblock.release()
                       
   def run(self):
-    self.initJobs()
-    #self.sync()
-    #tornado.ioloop.IOLoop.current().start()
+    #self.initJobs()
+    
+    registerserver = Configure.configure().value("server.crawler.healthServer.host")
+    registerport = Configure.configure().value("server.crawler.healthServer.port")
+    self._jobSync = JobSync(p_queue=self._master_job_queue, p_register={"host":registerserver, "port":registerport} )
+    self._jobSync.update()
+    
+    #asyncio.set_event_loop(asyncio.new_event_loop())
+    self.initJobs(p_jobSync=self._jobSync)
+    tornado.ioloop.IOLoop.current().start()
 
   def shutdown(self):
     if self._scheduler != None:  
@@ -96,7 +117,7 @@ class ParellelSchedule(threading.Thread):
 
 class Job(object):
 
-  def __init__(self, p_name, p_queue, p_interval, p_threads, p_batchnum, p_indice, p_type ):
+  def __init__(self, p_name, p_queue, p_interval, p_threads, p_batchnum, p_indice, p_type, p_index=None, p_jobSync=None):
     self._name=p_name
     self._main_job_queue=p_queue
     self._interval=p_interval
@@ -111,30 +132,66 @@ class Job(object):
     self._job_fetch_pool = concurrent.futures.ThreadPoolExecutor(max_workers=self._threadnum)
     self._last_exec_time=None
     self._last_exec_duration=None
-          
+    
+    self._jobidx = p_index
+    self._jobSync = p_jobSync
+    
   def __call__(self):
     print ("job %s running...", self._name)  
     self._last_exec_time = datetime.datetime.now()
-    #futures = []  
-    #for i in range(self._threadnum):
-    # future = self._job_fetch_pool.submit(self.sync, self._name, i, self._threadnum, self._batchnum, self._indice, self._type )
-    # futures.append(future)
+    futures = []  
+    for i in range(self._threadnum):
+      future = self._job_fetch_pool.submit(self.sync, self._name, i, self._threadnum, self._batchnum, self._indice, self._type )
+      futures.append(future)
       
-    #for fu in futures:
-    #  res = fu.result()
-    #self.sync()  
+    for fu in futures:
+      res = fu.result()
     self._last_exec_duration = (datetime.datetime.now()-self._last_exec_time).seconds 
   
-  def handle(self, data):
-    pass
+  @tornado.gen.coroutine
+  def start(self):
+    print ("Job[%s] starts..."%(self._name))
+    
+    while True:
+      loop=0  
+      print (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))  
+      yield tornado.gen.sleep(self._interval) 
+      print ( "Run once job after %d seconds"% (self._interval) ) 
+      if self._jobSync.nsize() == 0:
+        print ( "no available work node, skip this loop" )
+        continue
+    
+      try:
+        while True:  
+          start = self._threadnum * self._batchnum * loop
+          ifrom = self._jobidx * self._batchnum + start
+          loop = loop + 1
+          print ( "selelct job data from %d"% (ifrom) )
+          docs = ESHandler.ESClient.precise_search(p_indice=self._indice, p_type=self._type, p_qry_map=[{"group": self._name}, {"status": 1}], p_size=self._batchnum, p_from=ifrom) 
+          if docs == None or len(docs) == 0:
+            break
+          for rec in docs:
+            scenario = rec["_source"]
+            data = {"event": "work", "scenario": scenario} 
+            print ("send job data to main queue") 
+            yield self._main_job_queue.put(data)    
+#           client = node["node_client"]
+#           mq = node["mq"]
+#           client.setHandler(p_callback=self)
+#           
+#           data = {"sendno": None, "message": scenario}  
+#           mq.put(data, block=False)
+    
+      except:
+        self.reportExcept()
    
   #@tornado.gen.coroutine 
-  def sync(self):
+  def sync1(self):
         print ("job start put message to queue")
         yield self._main_job_queue.put({"test":"message"})
         print ("after put message")
         
-  def sync1(self, p_name, p_tindex, p_threadnum, p_batchnum, p_indice, p_type ):
+  def sync(self, p_name, p_tindex, p_threadnum, p_batchnum, p_indice, p_type ):
     size = p_batchnum  
     loop=0
   
@@ -142,7 +199,7 @@ class Job(object):
       start = p_threadnum * size * loop
       ifrom = p_tindex * size + start
       loop = loop + 1
-      docs = ESHandler.ESClient.precise_search(p_indice=p_indice, p_type=p_type, p_qry_map={"group": p_name}, p_size=size, p_from=ifrom) 
+      docs = ESHandler.ESClient.precise_search(p_indice=p_indice, p_type=p_type, p_qry_map=[{"group": self._name}, {"status": 1}], p_size=size, p_from=ifrom) 
       if docs == None:
         break;
       for rec in docs:
@@ -150,7 +207,7 @@ class Job(object):
         try:
           data = {"event": "work", "scenario": scenario} 
           print ("send job data to main queue") 
-          self._main_job_queue.put(data, block=False)    
+          self._main_job_queue.put(data)    
 #           client = node["node_client"]
 #           mq = node["mq"]
 #           client.setHandler(p_callback=self)
@@ -176,6 +233,7 @@ class CrawlerRegister(Process):
       "heartbeat": self.sendHeartBeat,
       "activelist": self.getAvailableNodeList
     }
+    
   def run(self):
     ServerWrapper.listen(p_name="Master-Scheduler", p_prefix="server.crawler.healthServer", p_handler=self)
     tornado.ioloop.IOLoop.current().start()
@@ -187,8 +245,8 @@ class CrawlerRegister(Process):
        
       if crawler["id"] in self._reg_node_list:
         print ("crawler already registered!")
-        return False
-      self._reg_node_list[crawler["id"]] = { "host": crawler["host"], "port": crawler["port"], "registerTime": datetime.datetime.now(), "renewalTime": datetime.datetime.now()}
+        return { "status": StatusCode.ERROR, "message": "crawler already registered!" }
+      self._reg_node_list[crawler["id"]] = { "host": crawler["host"], "port": crawler["port"], "registerTime": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "renewalTime": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 #       if self._crawler_maps == None:
 #         self._crawler_maps = {}
       #c = self.Sync(p_queue=self._master_job_queue, p_crawler=crawler)      
@@ -197,15 +255,15 @@ class CrawlerRegister(Process):
        
     except:
       traceback.print_exc()
-      return False
+      return { "status": StatusCode.ERROR, "message": "Register met error" }
         
-    return True
+    return { "status": StatusCode.OK, "message": "DONE" }
   
   def sendHeartBeat(self, p_request_body):
     pass
 
   def getAvailableNodeList(self, p_request_body):
-    pass
+    return { "status": StatusCode.OK, "message": "DONE", "reg_node_list": self._reg_node_list }
       
   def callback(self, p_message=None):
     body = json.loads(p_message)  
@@ -215,12 +273,12 @@ class CrawlerRegister(Process):
     
     res = self._events[event](body)
     #res = self.registerCrawler(p_crawler=p_message)   
-    if res:
-      status = StatusCode.OK
-    else :
-      status = StatusCode.ERROR  
-    ret = {"status": status, "message": "Register done"}
-    return json.dumps(ret)
+#     if res:
+#       status = StatusCode.OK
+#     else :
+#       status = StatusCode.ERROR  
+#     ret = {"status": status, "message": "Register done"}
+    return json.dumps(res)
 
 
 class JobSync(threading.Thread):
@@ -241,40 +299,39 @@ class JobSync(threading.Thread):
     def getProp(self, p_prop):
       return self._crawler[p_prop]
   
+    def nsize(self):
+      return len(self._node_list)
+  
     @tornado.gen.coroutine
     def update(self):
       print ("Start connect to register server: ", self._register["host"], self._register["port"])  
       self.stream = yield TCPClient().connect(self._register["host"], self._register["port"])
       print ("Start update node list from register server...")
       count=0
-      try:
-
-        while True:
-          time.sleep(7)
+      while True:
+        try:
           message={"event":"activelist"}
           encode_json = json.dumps(message)  
           self.stream.write(encode_json.encode()+b"\n")
           rec=yield self.stream.read_until(b'\n')
           print ('recive from the server',rec)
-          #test
-          if count >=1:
-            continue
-        
-          m={"host":"localhost","port":8088}
-          client = SimpleTcpclient(p_mq=self._main_queue, p_server_map=m)
-          client.start()
-      
-          m1={"host":"localhost","port":8089}
-          client1 = SimpleTcpclient(p_mq=self._main_queue, p_server_map=m1)
-          client1.start()
-      
-          m2={"host":"localhost","port":8087}
-          client2 = SimpleTcpclient(p_mq=self._main_queue, p_server_map=m2)
-          client2.start()
-          count = count+1
-      except tornado.iostream.StreamClosedError:
-        print ("JobSync update met error")
-    
+          content = json.loads(rec) 
+          nodelist = content["reg_node_list"] if "reg_node_list" in content else None
+          if nodelist:
+            for nodekey in nodelist.keys():
+              if nodekey in self._node_list:
+                continue
+              m={ "host": nodelist[nodekey]["host"], "port": nodelist[nodekey]["port"] }
+              client = SimpleTcpclient(p_mq=self._main_queue, p_server_map=m)
+              client.start()
+              self._node_list[nodekey] = nodelist[nodekey]
+              print ("Add node", m)
+          
+        except tornado.iostream.StreamClosedError:
+          print ("JobSync update met error")
+        finally:
+          yield tornado.gen.sleep(Configure.configure().value("server.crawler.updator.interval", 30))
+
     @tornado.gen.coroutine
     def sync(self):
       while True:
@@ -295,6 +352,7 @@ class JobSync(threading.Thread):
           print ("after put message")      
                  
     def run(self):
+      #asyncio.set_event_loop(asyncio.new_event_loop())  
       #self.sync()  
       #print ("Start job sync...")  
       self.update()
@@ -309,7 +367,7 @@ class JobSync(threading.Thread):
 #         client = SimpleTcpclient(p_mq=self._main_queue, p_server_map=m)
 #         client.start()
 #         print (idx, "new crawler::"+self._crawler["host"]+":"+str(self._crawler["port"])+" listen starts...")  
-      tornado.ioloop.IOLoop.current().start()
+      #tornado.ioloop.IOLoop.current().start()
        
 class CrawlerPicker(object):
   

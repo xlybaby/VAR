@@ -47,25 +47,27 @@ class Main(object):
     ESHandler.ini()
     
     #Initialize job schedule
-    crawler_picker = CrawlerPicker()
     #main_jod_queue = queue.Queue(Configure.configure().value("scheduler.messageQueueSize", p_default=1000))
+    main_jod_queue = ThreadSafeQueue(size=Configure.configure().value("scheduler.messageQueueSize", p_default=1000))
+
+    crawler_picker = CrawlerPicker()
+    Main.crawlerRegister = CrawlerRegister(p_crawler_picker=crawler_picker, p_main_jod_queue=main_jod_queue)
+    Main.crawlerRegister.start()
+
     #main_jod_queue = manager.Queue(Configure.configure().value("scheduler.messageQueueSize", p_default=1000))
     #main_jod_queue = Queue(maxsize=Configure.configure().value("scheduler.messageQueueSize", p_default=1000))
-    main_jod_queue = ThreadSafeQueue(size=Configure.configure().value("scheduler.messageQueueSize", p_default=1000))
     
     Main.parellelSchedule=ParellelSchedule(p_main_jod_queue=main_jod_queue)
     Main.parellelSchedule.start()
     #Main.parellelSchedule.run()
     
-    Main.crawlerRegister = CrawlerRegister(p_crawler_picker=crawler_picker, p_main_jod_queue=main_jod_queue)
     #Main.crawlerRegister.daemon = True
-    Main.crawlerRegister.start()
     #Main.crawlerRegister.run()
     
-    registerserver = Configure.configure().value("server.crawler.healthServer.host")
-    registerport = Configure.configure().value("server.crawler.healthServer.port")
-    Main.jobSync = JobSync(p_queue=main_jod_queue, p_register={"host":registerserver, "port":registerport}, p_crawler_picker=crawler_picker)
-    Main.jobSync.start()
+    #registerserver = Configure.configure().value("server.crawler.healthServer.host")
+    #registerport = Configure.configure().value("server.crawler.healthServer.port")
+    #Main.jobSync = JobSync(p_queue=main_jod_queue, p_register={"host":registerserver, "port":registerport}, p_crawler_picker=crawler_picker)
+    #Main.jobSync.start()
     #Start main thread loop
     #tornado.ioloop.IOLoop.current().start()
     
@@ -74,12 +76,13 @@ class Main(object):
     Main.crawlerRegister.join()
     
     #Initialize server
-#     try:
-#         # This is here to simulate application activity (which keeps the main thread alive).
-#         while True:
-#             time.sleep(2)
-#     except (KeyboardInterrupt, SystemExit):
-#         # Not strictly necessary if daemonic mode is enabled but should be done if possible
+    try:
+        # This is here to simulate application activity (which keeps the main thread alive).
+        while True:
+            time.sleep(2)
+    except (KeyboardInterrupt, SystemExit):
+      pass    
+        # Not strictly necessary if daemonic mode is enabled but should be done if possible
 #         parellelSchedule.shutdown()
             
 if __name__ == '__main__':

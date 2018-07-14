@@ -166,6 +166,7 @@ class SimpleTcpclient(object):
       while True:
         try:     
           print("Tcpclient waiting message from queue...", self._host, self._port)
+          #data = self._mq.get(block=True) 
           data = yield self._mq.get() 
           #data = yield future.result()
           print("Tcpclient got message from queue...", self._host, self._port, data)
