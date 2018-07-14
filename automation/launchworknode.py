@@ -69,13 +69,13 @@ class Main(object):
     leader=Leader(p_node_name=nodename, p_monitor=monitor)
       
     #Initialize node register and health info report schedule
-    scheduleserveraddr = Configure.configure().value("server.crawler.healthServer.host")
-    scheduleserverport = Configure.configure().value("server.crawler.healthServer.port")
+    scheduleserveraddr = Configure.configure().value("server.healthServer.host")
+    scheduleserverport = Configure.configure().value("server.healthServer.port")
     scheduleserver={"host":scheduleserveraddr,"port":scheduleserverport}
     Main.communicator=Communicator(p_schedule_server=scheduleserver, p_leader=leader)
       
     #Initialize node job accept service
-    ServerWrapper.listen(p_name=nodename, p_prefix="server.crawler.nodeServer", p_handler=leader)
+    ServerWrapper.listen(p_name=nodename, p_prefix="server.nodeServer", p_handler=leader)
 #     try:
 #         # This is here to simulate application activity (which keeps the main thread alive).
 #         while True:

@@ -102,8 +102,8 @@ class ParellelSchedule(Process):
   def run(self):
     #self.initJobs()
     
-    registerserver = Configure.configure().value("server.crawler.healthServer.host")
-    registerport = Configure.configure().value("server.crawler.healthServer.port")
+    registerserver = Configure.configure().value("server.healthServer.host")
+    registerport = Configure.configure().value("server.healthServer.port")
     self._jobSync = JobSync(p_queue=self._master_job_queue, p_register={"host":registerserver, "port":registerport} )
     self._jobSync.update()
     
@@ -235,7 +235,7 @@ class CrawlerRegister(Process):
     }
     
   def run(self):
-    ServerWrapper.listen(p_name="Master-Scheduler", p_prefix="server.crawler.healthServer", p_handler=self)
+    ServerWrapper.listen(p_name="Master-Scheduler", p_prefix="server.healthServer", p_handler=self)
     tornado.ioloop.IOLoop.current().start()
 
   def registerCrawler(self, p_request_body):
@@ -330,7 +330,7 @@ class JobSync(threading.Thread):
         except tornado.iostream.StreamClosedError:
           print ("JobSync update met error")
         finally:
-          yield tornado.gen.sleep(Configure.configure().value("server.crawler.updator.interval", 30))
+          yield tornado.gen.sleep(Configure.configure().value("register.crawler.updator.interval", 30))
 
     @tornado.gen.coroutine
     def sync(self):
