@@ -42,4 +42,5 @@ encoding//automation/client.py=utf-8
 encoding//automation/launchscheduler.py=utf-8
 encoding//automation/launchworknode.py=utf-8
 encoding//automation/mainentry.py=utf-8
+encoding//automation/process.py=utf-8
 encoding//automation/server.py=utf-8
