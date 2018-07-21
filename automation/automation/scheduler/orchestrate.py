@@ -172,7 +172,10 @@ class Job(object):
             break
           for rec in docs:
             scenario = rec["_source"]
-            data = {"event": "work", "scenario": scenario} 
+            
+            utc_time = datetime.datetime.utcfromtimestamp(time.time())
+            scheduletime = utc_time.strftime( '%Y-%m-%dT%H:%M:%S.%fZ' )
+            data = {"event": "work", "job": scenario, "scheduletime": scheduletime} 
             print ("send job data to main queue") 
             yield self._main_job_queue.put(data)    
 #           client = node["node_client"]

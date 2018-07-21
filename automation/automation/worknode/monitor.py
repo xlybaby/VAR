@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import datetime
 from automation.common.application import Configure
 
 class MultiProcessJobWatcher(object):
@@ -9,7 +10,8 @@ class MultiProcessJobWatcher(object):
     self._proc_pool = {}
     
   def newProc(self, p_proc):
-    self._proc_pool[p_proc.pid] = {"proc":p_proc, "starttime": datetime.datetime.now()}
+    print ("Add worker process-%s to monitor list" %(p_proc.pid))
+    self._proc_pool[p_proc.pid] = {"proc":p_proc, "initime": datetime.datetime.now(), "lastexetime":None}
   
   def __call__(self):
     print ("MultiProcessJobWatcher running...")

@@ -63,10 +63,10 @@ class Main(object):
                 'max_instances': 1
                  }
     mosche = BackgroundScheduler(executors=executors, job_defaults=job_defaults, timezone=utc)  
-    mosche.add_job(monitor,'interval',seconds=10)
+    mosche.add_job(monitor,'interval',seconds=Configure.configure().value("worknode.workerMonitorInterval"))
       
     #Initialize worker leader
-    leader=Leader(p_node_name=nodename, p_monitor=monitor)
+    leader=Leader(p_addr=Main.ipAddr, p_node_name=nodename, p_monitor=monitor)
       
     #Initialize node register and health info report schedule
     scheduleserveraddr = Configure.configure().value("server.healthServer.host")
@@ -76,14 +76,15 @@ class Main(object):
       
     #Initialize node job accept service
     ServerWrapper.listen(p_name=nodename, p_prefix="server.nodeServer", p_handler=leader)
-#     try:
-#         # This is here to simulate application activity (which keeps the main thread alive).
-#         while True:
-#             time.sleep(2)
-#     except (KeyboardInterrupt, SystemExit):
-#         # Not strictly necessary if daemonic mode is enabled but should be done if possible
-#         parellelSchedule.shutdown()
     tornado.ioloop.IOLoop.current().start()
+
+    try:
+        # This is here to simulate application activity (which keeps the main thread alive).
+        while True:
+            time.sleep(2)
+    except (KeyboardInterrupt, SystemExit):
+        # Not strictly necessary if daemonic mode is enabled but should be done if possible
+        parellelSchedule.shutdown()
     
 if __name__ == '__main__':
   #print (sys.argv)
